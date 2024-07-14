@@ -46,7 +46,7 @@ jobs:
     container:
       image: docker.io/library/python:${{ matrix.python-version }}-bookworm
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Install dependencies
         run: |
           apt update && \
