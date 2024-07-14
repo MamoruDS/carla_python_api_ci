@@ -3,8 +3,8 @@ name: carla-pythonapi-client-ci
 on:
   workflow_dispatch:
     inputs:
-      python-version:
-        description: "Python version"
+      PYTHON_VERSION:
+        description: "The Python version used to build the client"
         required: true
         default: "3.10"
         type: choice
@@ -13,8 +13,8 @@ on:
           - "3.10"
           - "3.11"
           - "3.12"
-      carla-version:
-        description: "Carla version"
+      CARLA_VERSION:
+        description: "The version of Carla used for building."
         required: true
         default: "0.9.14"
         type: choice
@@ -27,7 +27,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     container:
-      image: docker.io/library/python:${{github.event.inputs.python-version}}-bookworm
+      image: docker.io/library/python:${{github.event.inputs.PYTHON_VERSION}}-bookworm
     steps:
       - uses: actions/checkout@v3
       - name: Install dependencies
@@ -55,7 +55,7 @@ jobs:
           python3 -m pip install distro
       - name: Clone Carla Repository
         run: |
-          git clone --depth 1 -b ${{github.event.inputs.carla-version}} https://github.com/carla-simulator/carla.git
+          git clone --depth 1 -b ${{github.event.inputs.CARLA_VERSION}} https://github.com/carla-simulator/carla.git
           git config --global --add safe.directory /carla
       - name: Replace the build tool in Carla 0.9.14
         run: |
