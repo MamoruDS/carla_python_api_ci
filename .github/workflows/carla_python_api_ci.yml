@@ -73,6 +73,7 @@ jobs:
           git clone --depth 1 -b ${{github.event.inputs.CARLA_VERSION}} https://github.com/carla-simulator/carla.git
           git config --global --add safe.directory /carla
       - name: Replace the build tool in Carla 0.9.14
+        if: ${{ github.event.inputs.CARLA_VERSION != '0.9.14' }}
         run: |
           rm -rf carla/Util/BuildTools
           mkdir tmp && cd tmp
