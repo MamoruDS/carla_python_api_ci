@@ -3,16 +3,16 @@ name: carla-pythonapi-client-ci
 on:
   workflow_dispatch:
     inputs:
-      PYTHON_VERSION:
-        description: "The Python version used to build the client"
-        required: true
-        default: "3.10"
-        type: choice
-        options:
-          - "3.9"
-          - "3.10"
-          - "3.11"
-          - "3.12"
+      # PYTHON_VERSION:
+      #   description: "The Python version used to build the client"
+      #   required: true
+      #   default: "3.10"
+      #   type: choice
+      #   options:
+      #     - "3.9"
+      #     - "3.10"
+      #     - "3.11"
+      #     - "3.12"
       CARLA_VERSION:
         description: "The version of Carla used for building."
         required: true
@@ -24,10 +24,27 @@ on:
           - "0.9.15"
 
 jobs:
-  build:
+  load-matrix:
     runs-on: ubuntu-latest
+    outputs:
+      pythons: ${{ steps.set-data.outputs.pythons }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: set-data
+        working-directory: .
+        run: |
+          matrix=$(cat ./targets.json | jq -c)
+          echo "pythons=$matrix" >> $GITHUB_OUTPUT
+  build:
+    needs: load-matrix
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.load-matrix.outputs.pythons) }}
     container:
-      image: docker.io/library/python:${{github.event.inputs.PYTHON_VERSION}}-bookworm
+      image: docker.io/library/python:${{ matrix.python-version }}-bookworm
     steps:
       - uses: actions/checkout@v3
       - name: Install dependencies
@@ -81,3 +98,24 @@ jobs:
         run: |
           cd carla
           make PythonAPI.3
+      - name: Upload built
+        uses: actions/upload-artifact@v4
+        with:
+          name: built-${{ matrix.python-version }}
+          path: carla/PythonAPI/carla/dist/*
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download builts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: built-*
+          path: dist
+          merge-multiple: true
+      - uses: ncipollo/release-action@v1
+        with:
+          allowUpdates: true
+          tag: carla-${{github.event.inputs.CARLA_VERSION}}
+          draft: true
+          artifacts: dist/*
