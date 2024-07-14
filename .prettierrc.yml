@@ -1,1 +1,14 @@
-tabWidth: 2
+quoteProps: consistent
+semi: false
+singleQuote: true
+tabWidth: 4
+overrides:
+  - files:
+      - "*.yml"
+      - "*.yaml"
+    options:
+      tabWidth: 2
+  - files:
+      - "*.md"
+    options:
+      tabWidth: 2
