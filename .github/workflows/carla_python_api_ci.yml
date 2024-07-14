@@ -38,8 +38,6 @@ jobs:
   build:
     needs: load-matrix
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.load-matrix.outputs.pythons) }}
@@ -106,6 +104,8 @@ jobs:
   release:
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Download builts
         uses: actions/download-artifact@v4
