@@ -1,0 +1,83 @@
+name: carla-pythonapi-client-ci
+
+on:
+  workflow_dispatch:
+    inputs:
+      python-version:
+        description: "Python version"
+        required: true
+        default: "3.10"
+        type: choice
+        options:
+          - "3.9"
+          - "3.10"
+          - "3.11"
+          - "3.12"
+      carla-version:
+        description: "Carla version"
+        required: true
+        default: "0.9.14"
+        type: choice
+        options:
+          - "0.9.13"
+          - "0.9.14"
+          - "0.9.15"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: docker.io/library/python:${{github.event.inputs.python-version}}-bookworm
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install dependencies
+        run: |
+          apt update && \
+          apt install -y build-essential \
+                         autoconf \
+                         clang \
+                         cmake \
+                         curl \
+                         git \
+                         lld \
+                         ninja-build \
+                         rsync \
+                         unzip \
+                         wget \
+                         python3-dev \
+                         python3-setuptools \
+                         python3-wheel \
+                         libjpeg-dev \
+                         libpng-dev \
+                         libtiff5-dev \
+                         libtool \
+                         libxml2-dev
+          python3 -m pip install distro
+      - name: Clone Carla Repository
+        run: |
+          git clone --depth 1 -b ${{github.event.inputs.carla-version}} https://github.com/carla-simulator/carla.git
+          git config --global --add safe.directory /carla
+      - name: Replace the build tool in Carla 0.9.14
+        run: |
+          rm -rf carla/Util/BuildTools
+          mkdir tmp && cd tmp
+          git clone --depth 1 -b 0.9.14 https://github.com/carla-simulator/carla.git 
+          cd .. && cp -r tmp/carla/Util/BuildTools carla/Util
+      - name: Correct the Setup.sh script
+        run: |
+          sed -i 's/git reset --hard ${RECAST_COMMIT}/git checkout carla/g' carla/Util/BuildTools/Setup.sh
+          sed -i '/mkdir -p \"${PWD}\/${RECAST_BASENAME}-install\/include\/recast\"/d' carla/Util/BuildTools/Setup.sh
+          sed -i '/mv \"${PWD}\/${RECAST_BASENAME}-install\/include\/\"\*h/d' carla/Util/BuildTools/Setup.sh
+      - name: Disable tests in CMakeLists.txt
+        run: |
+          sed -i 's/add_subdirectory(\"test\")/#add_subdirectory(\"test\")/g' carla/LibCarla/cmake/CMakeLists.txt
+      - name: Remove the dirty label
+        run: |
+          sed -i 's/git describe --tags --dirty --always/git describe --tags --always/g' carla/Util/BuildTools/Environment.sh
+      - name: Update distro usage
+        run: |
+          sed -i 's/distro\.linux_distribution()\[0\]/distro.id()/g' carla/PythonAPI/carla/setup.py
+      - name: Build the Carla Python API client
+        run: |
+          cd carla
+          make PythonAPI.3
