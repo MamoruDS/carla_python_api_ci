@@ -1,4 +1,4 @@
-# carla_python_api_cia
+# Carla-Python-API-CI
 
 This repo utilizes GitHub Action to build the CARLA Python API client for Python versions `3.9`, `3.10`, `3.11`, and `3.12`. Completed builds can be found in the releases.
 
